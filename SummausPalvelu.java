@@ -11,7 +11,7 @@ import java.net.UnknownHostException;
 /**
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
- *
+ * @version 24.11.2016 21:51
  */
 public class SummausPalvelu {
 
