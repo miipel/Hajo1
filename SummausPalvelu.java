@@ -10,7 +10,7 @@ import java.net.UnknownHostException;
 
 /**
  * 
- * @author Miika
+ * @author Miika Peltotalo ja Peetu Seilonen
  *
  */
 public class SummausPalvelu {
