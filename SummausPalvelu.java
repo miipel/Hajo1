@@ -1,6 +1,11 @@
-package hajo1;
+
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.InterruptedIOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -11,13 +16,13 @@ import java.net.UnknownHostException;
 /**
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
- * @version 24.11.2016 21:51
+ * @version 25.11.2016 13:10
  */
 public class SummausPalvelu {
 
 	private static void main(String[] args) throws Exception {		
 		lahetaUDP();			
-		kuuntele();
+		kuunteleTCP();
 		
 
 	} // main
@@ -33,11 +38,30 @@ public class SummausPalvelu {
 		
 	}
 
-	private static void kuuntele() throws IOException {
+	private static void kuunteleTCP() throws IOException {
 		// Kuuntele 1-5 s, sen jälkeen lähetä uudelleen
 		// Viidennen uudelleen lähetyksen jälkeen terminate
+		Socket soketti;
+		int porttiNo = 0;
+		int yrityskerta = 0;
 		
-	}
+		
+		while (yrityskerta < 5) {
+			try {
+				lahetaUDP();
+				soketti = new Socket(InetAddress.getLocalHost(), porttiNo);
+				soketti.setSoTimeout(5000);
+				OutputStream oS = soketti.getOutputStream();
+				InputStream iS = soketti.getInputStream();
+				ObjectOutputStream oOut = new ObjectOutputStream(oS);
+				ObjectInputStream oIn = new ObjectInputStream(iS);
+				
+			}catch (SocketException e) {yrityskerta++;}
+			
+		} // while
+		
+	} // void kuuntele()
+		
 
 	static class SummausPalvelija extends Thread {
 		@Override
@@ -46,5 +70,4 @@ public class SummausPalvelu {
 		}
 	} // class SummausPalvelija
 	
-} // class Sovellus
-
+} // class SummausPalvelu
