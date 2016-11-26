@@ -19,6 +19,7 @@ import java.net.UnknownHostException;
  * @version 26.11.2016 17:02
  */
 public class SummausPalvelu {
+	private static int[] porttiNumerot; 
 
 	private static void main(String[] args) throws Exception {		
 		lahetaUDP();			
@@ -71,7 +72,6 @@ public class SummausPalvelu {
 		// Saa parametreina aikaisemmin muodostetut oliovirrat ja soketin
 		// Odottaa t:n arvoa oliovirrasta, jonka mukaan SummausPalvelijaa aletaan käyttämään
 		int t;
-		int[] porttiNumerot; // tähän kerätään t:n verran portteja
 		try {
 			t = oIn.readInt(); // yritetään lukea oliovirrasta kokonaislukua
 			if (t >= 2 || t <= 10) { // tarkistetaan, kelpaako vastaanotettu luku
@@ -79,8 +79,9 @@ public class SummausPalvelu {
 				// generoidaan porttinumero t-kertaa ja lisätään se porttiNumerot-taulukkoon
 				for (int i = 0; i < t; i++) {
 					porttiNumerot[i] = (int) (1025 + (Math.random() * 64510));
-					
 				}
+				
+				
 			}
 			oOut.writeInt(-1); // jos t ei ole väliltä 2...10, niin lähetetään -1
 			soketti.close();   // ja suljetaan soketti.
@@ -89,6 +90,8 @@ public class SummausPalvelu {
 	} // odotaT()
 
 	static class SummausPalvelija extends Thread {
+		
+		
 		@Override
 		public void run(){
 			
