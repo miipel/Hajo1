@@ -16,7 +16,7 @@ import java.net.UnknownHostException;
 /**
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
- * @version 25.11.2016 13:10
+ * @version 26.11.2016 17:02
  */
 public class SummausPalvelu {
 
@@ -48,20 +48,45 @@ public class SummausPalvelu {
 		
 		while (yrityskerta < 5) {
 			try {
-				lahetaUDP();
+				lahetaUDP(); // lähetetään UDP paketti asiakkaalle
 				soketti = new Socket(InetAddress.getLocalHost(), porttiNo);
-				soketti.setSoTimeout(5000);
+				soketti.setSoTimeout(5000); // soketti odottaa yhteydenottoa 5 sek.
+				//avataan oliovirrat
 				OutputStream oS = soketti.getOutputStream();
 				InputStream iS = soketti.getInputStream();
 				ObjectOutputStream oOut = new ObjectOutputStream(oS);
 				ObjectInputStream oIn = new ObjectInputStream(iS);
-				
+				try {
+					// kun yhteys on saatu, lähetetään soketti ja oliovirta..
+					// ..odotaT() -metodille, joka odottaa asiakkaalta kokonaislukua t
+					odotaT(soketti, oOut, oIn);
+				} catch (Exception e) {e.toString();}
 			}catch (SocketException e) {yrityskerta++;}
-			
-		} // while
+		
+		} // while	
 		
 	} // void kuuntele()
+	
+	private static void odotaT(Socket soketti, ObjectOutputStream oOut, ObjectInputStream oIn) throws Exception {
+		// Saa parametreina aikaisemmin muodostetut oliovirrat ja soketin
+		// Odottaa t:n arvoa oliovirrasta, jonka mukaan SummausPalvelijaa aletaan käyttämään
+		int t;
+		int[] porttiNumerot; // tähän kerätään t:n verran portteja
+		try {
+			t = oIn.readInt(); // yritetään lukea oliovirrasta kokonaislukua
+			if (t >= 2 || t <= 10) { // tarkistetaan, kelpaako vastaanotettu luku
+				porttiNumerot = new int[t]; // alustetaan porttiNumerot oikean kokoiseksi		
+				// generoidaan porttinumero t-kertaa ja lisätään se porttiNumerot-taulukkoon
+				for (int i = 0; i < t; i++) {
+					porttiNumerot[i] = (int) (1025 + (Math.random() * 64510));
+					
+				}
+			}
+			oOut.writeInt(-1); // jos t ei ole väliltä 2...10, niin lähetetään -1
+			soketti.close();   // ja suljetaan soketti.
+		}catch (SocketException e) {oOut.writeInt(-1);} // jos vastausta ei tule 5 sek. kuluessa, lähetä -1
 		
+	} // odotaT()
 
 	static class SummausPalvelija extends Thread {
 		@Override
