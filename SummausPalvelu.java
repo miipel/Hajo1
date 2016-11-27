@@ -17,6 +17,8 @@ import java.net.UnknownHostException;
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
  * @version 27.11.2016 13:50
+ * @var int[] porttiNumerot: sis‰lt‰‰ porttien numeroit, joita SummausPalvelin kuuntelee
+ * @var boolean yhteysValmis: kun yhteys asiakkaaseen on saatu ja on aika ailoittaa SummausPalvelimen k‰yttˆ 
  */
 public class SummausPalvelu {
 	private static int[] porttiNumerot; 
@@ -97,9 +99,9 @@ public class SummausPalvelu {
 
 	static class SummausPalvelija extends Thread {
 		/**
-		 * @param portti: Portti, jota SummausPalvelija kuuntelee
-		 * @param lukujenLkm: Vastaanotettujen lukujen lukum‰‰r‰
-		 * @param lukujenSum: Vastaanotettujen lukujen summa
+		 * @var int portti: Portti, jota SummausPalvelija kuuntelee
+		 * @var int lukujenLkm: Vastaanotettujen lukujen lukum‰‰r‰
+		 * @var int lukujenSum: Vastaanotettujen lukujen summa
 		 */
 		int portti; 
 		int lukujenLkm;
