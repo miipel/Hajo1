@@ -16,14 +16,16 @@ import java.net.UnknownHostException;
 /**
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
- * @version 26.11.2016 17:02
+ * @version 27.11.2016 13:50
  */
 public class SummausPalvelu {
 	private static int[] porttiNumerot; 
+	private boolean yhteysValmis;
 
 	private static void main(String[] args) throws Exception {		
 		lahetaUDP();			
 		kuunteleTCP();
+		// SummausPalvelija.start();
 		
 
 	} // main
@@ -63,9 +65,7 @@ public class SummausPalvelu {
 					odotaT(soketti, oOut, oIn);
 				} catch (Exception e) {e.toString();}
 			}catch (SocketException e) {yrityskerta++;}
-		
-		} // while	
-		
+		} // while			
 	} // void kuuntele()
 	
 	private static void odotaT(Socket soketti, ObjectOutputStream oOut, ObjectInputStream oIn) throws Exception {
@@ -80,18 +80,35 @@ public class SummausPalvelu {
 				for (int i = 0; i < t; i++) {
 					porttiNumerot[i] = (int) (1025 + (Math.random() * 64510));
 				}
-				
-				
+				// kun kaikki porttinumerot on lisätty taulukkoon,
+				// lähetetään taulukko asiakkaalle ja käynnistetään summauspalvelin toimimaan ko. porttiin
+				for (int i = 0; i < porttiNumerot.length; i++) {
+					oOut.writeInt(porttiNumerot[i]);
+					oOut.flush();
+					SummausPalvelija lukuWelho = new SummausPalvelija(porttiNumerot[i]);
+				}
 			}
 			oOut.writeInt(-1); // jos t ei ole väliltä 2...10, niin lähetetään -1
+			oOut.flush();
 			soketti.close();   // ja suljetaan soketti.
-		}catch (SocketException e) {oOut.writeInt(-1);} // jos vastausta ei tule 5 sek. kuluessa, lähetä -1
+		}catch (SocketException e) {oOut.writeInt(-1); oOut.flush();} // jos vastausta ei tule 5 sek. kuluessa, lähetä -1
 		
 	} // odotaT()
 
 	static class SummausPalvelija extends Thread {
+		/**
+		 * @param portti: Portti, jota SummausPalvelija kuuntelee
+		 * @param lukujenLkm: Vastaanotettujen lukujen lukumäärä
+		 * @param lukujenSum: Vastaanotettujen lukujen summa
+		 */
+		int portti; 
+		int lukujenLkm;
+		int lukujenSum;
 		
-		
+		private SummausPalvelija (int portti) {
+			this.portti = portti;
+			
+		} // konstruktori
 		@Override
 		public void run(){
 			
