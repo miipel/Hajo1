@@ -12,17 +12,21 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 /**
  * 
  * @author Miika Peltotalo ja Peetu Seilonen
- * @version 27.11.2016 13:50
+ * @version 27.11.2016 18:15
+ * 
  * @var int[] porttiNumerot: sis‰lt‰‰ porttien numeroit, joita SummausPalvelin kuuntelee
  * @var boolean yhteysValmis: kun yhteys asiakkaaseen on saatu ja on aika ailoittaa SummausPalvelimen k‰yttˆ 
+ * @var ArrayList<int> luvut: t‰nne ker‰t‰‰n kaikki vastaanotetut luvut
  */
 public class SummausPalvelu {
 	private static int[] porttiNumerot; 
-	// private boolean yhteysValmis;
+	private static ArrayList<Integer> luvut = new ArrayList<Integer>();
+	private static boolean yhteysValmis;
 
 	public static void main(String[] args) throws Exception {		
 		// lahetaUDP();			
@@ -89,11 +93,34 @@ public class SummausPalvelu {
 					oOut.flush();
 					new SummausPalvelu.SummausPalvelija(porttiNumerot[i], InetAddress.getLocalHost()).start();
 				}
-			}
+				yhteysValmis = true;
+				soketti.setSoTimeout(600); // minuutin time-out
+				// Odotetaan Y:lt‰ lukuja 1, 2 tai 3, jos joku muu luku, niin palautetaan -1
+				while(yhteysValmis) { 
+					// t‰‰ on kyl aika Aku Ankka -ratkasu, en usko et t‰‰ toimii
+					try {
+						if (oIn.readInt() == 1 || oIn.readInt() == 2 || oIn.readInt() == 3) {
+							if (oIn.readInt() == 1) {
+								oOut.writeInt(annaSum());
+							
+							}else if (oIn.readInt() == 2) {
+								oOut.writeInt(annaSuurin());
+							
+							}else if (oIn.readInt() == 3) {
+								oOut.writeInt(annaLkm());
+							}
+								
+						}else {
+							oOut.writeInt(-1);
+						}
+					}catch (Exception e) { e.toString(); }
+						
+				} // while
+			} // if
 			oOut.writeInt(-1); // jos t ei ole v‰lilt‰ 2...10, niin l‰hetet‰‰n -1
 			oOut.flush();
-			soketti.close();   // ja suljetaan soketti.
-		}catch (SocketException e) {oOut.writeInt(-1); oOut.flush();} // jos vastausta ei tule 5 sek. kuluessa, l‰het‰ -1
+			//soketti.close();   // ja suljetaan soketti.
+		}catch (SocketException e) { oOut.writeInt(-1); oOut.flush(); yhteysValmis = false; } // jos vastausta ei tule 5 sek. kuluessa, l‰het‰ -1
 		
 	} // odotaT()
 
@@ -101,23 +128,50 @@ public class SummausPalvelu {
 		/**
 		 * @var int portti: Portti, jota SummausPalvelija kuuntelee
 		 * @var InetAddress clientAddress: asiakkaan IP-osoite
-		 * @var int lukujenLkm: Vastaanotettujen lukujen lukum‰‰r‰
-		 * @var int lukujenSum: Vastaanotettujen lukujen summa
+		 * @var omaSum: yksitt‰isen SummausPalvelijan vastaanottama summa
 		 */
 		private final int portti;
 		private final InetAddress clientAddress;
-		private int lukujenLkm;
-		private int lukujenSum;
+		private int omaSum = 0;
+		private Socket soketti;
+		private OutputStream oS;
+		private InputStream iS;
+		private ObjectOutputStream oOut;
+		private ObjectInputStream oIn;
 		
 		private SummausPalvelija (int portti, InetAddress clientAddress) {
 			this.portti = portti;
 			this.clientAddress = clientAddress;
-			
+			try {
+				this.soketti = new Socket(clientAddress, portti);
+				this.oS = soketti.getOutputStream();
+				this.iS = soketti.getInputStream();
+				this.oOut = new ObjectOutputStream(oS);
+				this.oIn = new ObjectInputStream(iS);
+				
+			}catch (IOException e) {e.toString();}
 		} // konstruktori
+		
 		@Override
 		public void run(){
+			// Onnea t‰n metodin keksimiselle
 			
-		}
+		} // run
+		
 	} // class SummausPalvelija
-	
+	// gettereit‰
+	public static int annaSum() { // kun Y l‰hett‰‰ X:lle (int) 1
+		int sum = 0;
+		for (int i=0; i<luvut.size(); i++) {
+			sum = sum + luvut.get(i);
+		}
+		return sum;
+	} // annaSum()
+	public static int annaSuurin() {
+		// jaahas, ei vittu t‰t‰ metodia
+		return 12345;
+	}
+	public static int annaLkm() { //kun Y l‰hett‰‰ X:lle (int) 3
+		return luvut.size();
+	} // annaLkm()
 } // class SummausPalvelu
