@@ -22,18 +22,18 @@ import java.net.UnknownHostException;
  */
 public class SummausPalvelu {
 	private static int[] porttiNumerot; 
-	private boolean yhteysValmis;
+	// private boolean yhteysValmis;
 
-	private static void main(String[] args) throws Exception {		
-		lahetaUDP();			
-		kuunteleTCP();
-		// SummausPalvelija.start();
+	public static void main(String[] args) throws Exception {		
+		// lahetaUDP();			
+		muodostaTCP();
+		
 		
 
 	} // main
 
 	private static void lahetaUDP() throws IOException {
-		int porttiNo = 0;
+		int porttiNo = 1337;
 		String portti = Integer.toString(porttiNo);
 		DatagramSocket socketUDP = new DatagramSocket();
 		byte[] data = portti.getBytes();
@@ -43,11 +43,11 @@ public class SummausPalvelu {
 		
 	}
 
-	private static void kuunteleTCP() throws IOException {
+	private static void muodostaTCP() throws IOException {
 		// Kuuntele 1-5 s, sen jälkeen lähetä uudelleen
 		// Viidennen uudelleen lähetyksen jälkeen terminate
 		Socket soketti;
-		int porttiNo = 0;
+		int porttiNo = 1337;
 		int yrityskerta = 0;
 		
 		
@@ -87,7 +87,7 @@ public class SummausPalvelu {
 				for (int i = 0; i < porttiNumerot.length; i++) {
 					oOut.writeInt(porttiNumerot[i]);
 					oOut.flush();
-					SummausPalvelija lukuWelho = new SummausPalvelija(porttiNumerot[i]);
+					new SummausPalvelu.SummausPalvelija(porttiNumerot[i], InetAddress.getLocalHost()).start();
 				}
 			}
 			oOut.writeInt(-1); // jos t ei ole väliltä 2...10, niin lähetetään -1
@@ -100,15 +100,18 @@ public class SummausPalvelu {
 	static class SummausPalvelija extends Thread {
 		/**
 		 * @var int portti: Portti, jota SummausPalvelija kuuntelee
+		 * @var InetAddress clientAddress: asiakkaan IP-osoite
 		 * @var int lukujenLkm: Vastaanotettujen lukujen lukumäärä
 		 * @var int lukujenSum: Vastaanotettujen lukujen summa
 		 */
-		int portti; 
-		int lukujenLkm;
-		int lukujenSum;
+		private final int portti;
+		private final InetAddress clientAddress;
+		private int lukujenLkm;
+		private int lukujenSum;
 		
-		private SummausPalvelija (int portti) {
+		private SummausPalvelija (int portti, InetAddress clientAddress) {
 			this.portti = portti;
+			this.clientAddress = clientAddress;
 			
 		} // konstruktori
 		@Override
