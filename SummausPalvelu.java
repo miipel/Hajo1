@@ -1,4 +1,3 @@
-package hajo1;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -19,11 +18,11 @@ import java.util.ArrayList;
  * @author Miika Peltotalo ja Peetu Seilonen
  * @version 27.11.2016 18:15
  * 
- * @var int[] porttiNumerot: sis‰lt‰‰ porttien numeroit, joita SummausPalvelin
+ * @var int[] porttiNumerot: sis√§lt√§√§ porttien numeroit, joita SummausPalvelin
  *      kuuntelee
  * @var boolean yhteysValmis: kun yhteys asiakkaaseen on saatu ja on aika
- *      ailoittaa SummausPalvelimen k‰yttˆ
- * @var ArrayList<int> luvut: t‰nne ker‰t‰‰n kaikki vastaanotetut luvut
+ *      ailoittaa SummausPalvelimen k√§ytt√∂
+ * @var ArrayList<int> luvut: t√§nne ker√§t√§√§n kaikki vastaanotetut luvut
  */
 public class SummausPalvelu {
 	private static int[] porttiNumerot;
@@ -48,15 +47,15 @@ public class SummausPalvelu {
 	}
 
 	private static void muodostaTCP() throws IOException {
-		// Kuuntele 1-5 s, sen j‰lkeen l‰het‰ uudelleen
-		// Viidennen uudelleen l‰hetyksen j‰lkeen terminate
+		// Kuuntele 1-5 s, sen j√§lkeen l√§het√§ uudelleen
+		// Viidennen uudelleen l√§hetyksen j√§lkeen terminate
 		Socket soketti;
 		int porttiNo = 1337;
 		int yrityskerta = 0;
 
 		while (yrityskerta < 5) {
 			try {
-				lahetaUDP(); // l‰hetet‰‰n UDP paketti asiakkaalle
+				lahetaUDP(); // l√§hetet√§√§n UDP paketti asiakkaalle
 				soketti = new Socket(InetAddress.getLocalHost(), porttiNo);
 				soketti.setSoTimeout(5000); // soketti odottaa yhteydenottoa 5
 											// sek.
@@ -66,7 +65,7 @@ public class SummausPalvelu {
 				ObjectOutputStream oOut = new ObjectOutputStream(oS);
 				ObjectInputStream oIn = new ObjectInputStream(iS);
 				try {
-					// kun yhteys on saatu, l‰hetet‰‰n soketti ja oliovirta..
+					// kun yhteys on saatu, l√§hetet√§√§n soketti ja oliovirta..
 					// ..odotaT() -metodille, joka odottaa asiakkaalta
 					// kokonaislukua t
 					odotaT(soketti, oOut, oIn);
@@ -82,21 +81,21 @@ public class SummausPalvelu {
 	private static void odotaT(Socket soketti, ObjectOutputStream oOut, ObjectInputStream oIn) throws Exception {
 		// Saa parametreina aikaisemmin muodostetut oliovirrat ja soketin
 		// Odottaa t:n arvoa oliovirrasta, jonka mukaan SummausPalvelijaa
-		// aletaan k‰ytt‰m‰‰n
+		// aletaan k√§ytt√§m√§√§n
 		int t;
 		try {
-			t = oIn.readInt(); // yritet‰‰n lukea oliovirrasta kokonaislukua
+			t = oIn.readInt(); // yritet√§√§n lukea oliovirrasta kokonaislukua
 			if (t >= 2 || t <= 10) { // tarkistetaan, kelpaako vastaanotettu
 										// luku
 				porttiNumerot = new int[t]; // alustetaan porttiNumerot oikean
 											// kokoiseksi
-				// generoidaan porttinumero t-kertaa ja lis‰t‰‰n se
+				// generoidaan porttinumero t-kertaa ja lis√§t√§√§n se
 				// porttiNumerot-taulukkoon
 				for (int i = 0; i < t; i++) {
 					porttiNumerot[i] = (int) (1025 + (Math.random() * 64510));
 				}
-				// kun kaikki porttinumerot on lis‰tty taulukkoon,
-				// l‰hetet‰‰n taulukko asiakkaalle ja k‰ynnistet‰‰n
+				// kun kaikki porttinumerot on lis√§tty taulukkoon,
+				// l√§hetet√§√§n taulukko asiakkaalle ja k√§ynnistet√§√§n
 				// summauspalvelin toimimaan ko. porttiin
 				for (int i = 0; i < porttiNumerot.length; i++) {
 					oOut.writeInt(porttiNumerot[i]);
@@ -105,7 +104,7 @@ public class SummausPalvelu {
 				}
 				yhteysValmis = true;
 				soketti.setSoTimeout(600); // minuutin time-out
-				// Odotetaan Y:lt‰ lukuja 1, 2 tai 3, jos joku muu luku, niin
+				// Odotetaan Y:lt√§ lukuja 1, 2 tai 3, jos joku muu luku, niin
 				// palautetaan -1
 				while (yhteysValmis) {
 					try {
@@ -131,7 +130,7 @@ public class SummausPalvelu {
 
 				} // while
 			} // if
-			oOut.writeInt(-1); // jos t ei ole v‰lilt‰ 2...10, niin l‰hetet‰‰n
+			oOut.writeInt(-1); // jos t ei ole v√§lilt√§ 2...10, niin l√§hetet√§√§n
 								// -1
 			oOut.flush();
 			// soketti.close(); // ja suljetaan soketti.
@@ -139,7 +138,7 @@ public class SummausPalvelu {
 			oOut.writeInt(-1);
 			oOut.flush();
 			yhteysValmis = false;
-		} // jos vastausta ei tule 5 sek. kuluessa, l‰het‰ -1
+		} // jos vastausta ei tule 5 sek. kuluessa, l√§het√§ -1
 
 	} // odotaT()
 
@@ -147,7 +146,7 @@ public class SummausPalvelu {
 		/**
 		 * @var int portti: Portti, jota SummausPalvelija kuuntelee
 		 * @var InetAddress clientAddress: asiakkaan IP-osoite
-		 * @var omaSum: yksitt‰isen SummausPalvelijan vastaanottama summa
+		 * @var omaSum: yksitt√§isen SummausPalvelijan vastaanottama summa
 		 */
 		private final int portti;
 		private final InetAddress clientAddress;
@@ -175,14 +174,14 @@ public class SummausPalvelu {
 
 		@Override
 		public void run() {
-			// Onnea t‰n metodin keksimiselle
+			// Onnea t√§n metodin keksimiselle
 
 		} // run
 
 	} // class SummausPalvelija
-		// gettereit‰
+		// gettereit√§
 
-	public static int annaSum() { // kun Y l‰hett‰‰ X:lle (int) 1
+	public static int annaSum() { // kun Y l√§hett√§√§ X:lle (int) 1
 		int sum = 0;
 		for (int i = 0; i < luvut.size(); i++) {
 			sum = sum + luvut.get(i);
@@ -191,11 +190,11 @@ public class SummausPalvelu {
 	} // annaSum()
 
 	public static int annaSuurin() {
-		// jaahas, ei vittu t‰t‰ metodia
+		// jaahas, ei vittu t√§t√§ metodia
 		return 12345;
 	}
 
-	public static int annaLkm() { // kun Y l‰hett‰‰ X:lle (int) 3
+	public static int annaLkm() { // kun Y l√§hett√§√§ X:lle (int) 3
 		return luvut.size();
 	} // annaLkm()
 } // class SummausPalvelu
