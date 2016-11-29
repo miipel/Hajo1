@@ -108,7 +108,6 @@ public class SummausPalvelu {
 				// Odotetaan Y:lt‰ lukuja 1, 2 tai 3, jos joku muu luku, niin
 				// palautetaan -1
 				while (yhteysValmis) {
-					// t‰‰ on kyl aika Aku Ankka -ratkasu, en usko et t‰‰ toimii
 					try {
 						switch (oIn.readInt()) {
 
