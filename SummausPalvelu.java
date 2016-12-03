@@ -1,5 +1,6 @@
 package hajo1;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -36,21 +37,19 @@ public class SummausPalvelu implements Runnable {
 		try {
 			soketti = muodostaTCP();
 			System.out.println("Oma portti on " + soketti.getPort());
-			try {
-				OutputStream oS = soketti.getOutputStream();
-				InputStream iS = soketti.getInputStream();
-				oOut = new ObjectOutputStream(oS);
-				oIn = new ObjectInputStream(iS);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+
+			OutputStream oS = soketti.getOutputStream();
+			InputStream iS = soketti.getInputStream();
+			oOut = new ObjectOutputStream(oS);
+			oIn = new ObjectInputStream(iS);
+
 			odotaT(soketti, oIn, oOut);
 			alustaJaLaheta(soketti, oOut);
 			yhteysValmis = true;
 			while (yhteysValmis) {
 				odotaKyselya(soketti, oIn, oOut);
 			}
+			soketti.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -58,14 +57,16 @@ public class SummausPalvelu implements Runnable {
 	}
 
 	/**
-	 * Samalla kun palvelin Y työllistää summauspalvelijoita, se voi kysyä sovellukselta X kolmenlaista tietoa:
-	 * (1) mikä on tähän mennessä välitettyjen lukujen kokonaissumma, 
-	 * (2) mille summauspalvelijalle välitettyjen lukujen summa on suurin ja 
-	 * (3) mikä on tähän mennessä kaikille summauspalvelimille välitettyjen lukujen kokonaismäärä. 
-	 * Edelliset utelut palvelin Y tekee välittämällä X:lle niiden välisen oliovirran yli kokonaisluvun
-	 * 1, 2 tai 3 (vastaavasti). Sovelluksen X tulee vastata takaisin sen hetkisen tilanteen mukaisella 
-	 * kokonaisluvulla. Jos sovellus X saa tässä utelutilassa palvelimelta Y jonkin muun numeron kuin 1, 2, 3 
-	 * tai 0, niin sen tulee vastata takaisin luvulla −1.
+	 * Samalla kun palvelin Y työllistää summauspalvelijoita, se voi kysyä
+	 * sovellukselta X kolmenlaista tietoa: (1) mikä on tähän mennessä
+	 * välitettyjen lukujen kokonaissumma, (2) mille summauspalvelijalle
+	 * välitettyjen lukujen summa on suurin ja (3) mikä on tähän mennessä
+	 * kaikille summauspalvelimille välitettyjen lukujen kokonaismäärä.
+	 * Edelliset utelut palvelin Y tekee välittämällä X:lle niiden välisen
+	 * oliovirran yli kokonaisluvun 1, 2 tai 3 (vastaavasti). Sovelluksen X
+	 * tulee vastata takaisin sen hetkisen tilanteen mukaisella kokonaisluvulla.
+	 * Jos sovellus X saa tässä utelutilassa palvelimelta Y jonkin muun numeron
+	 * kuin 1, 2, 3 tai 0, niin sen tulee vastata takaisin luvulla −1.
 	 * 
 	 * @param soketti
 	 * @param oIn
@@ -75,14 +76,19 @@ public class SummausPalvelu implements Runnable {
 	private void odotaKyselya(Socket soketti, ObjectInputStream oIn, ObjectOutputStream oOut) throws IOException {
 		// Odotetaan Y:ltä lukuja 1, 2, 3 tai 0 jos joku muu luku, niin
 		// palautetaan -1
+		// soketti.setSoTimeout(5000);
 		while (yhteysValmis) {
 			int tapaus = oIn.readInt();
 			try {
 				switch (tapaus) {
 
 				case 0:
-					System.out.println("Sain " + tapaus + ", lopetetaan...");
+
 					yhteysValmis = false;
+					for (Thread saie : summaajat) {
+						saie.join();
+					}
+					System.out.println("Sain " + tapaus + ", lopetetaan...");
 					break;
 
 				case 1:
@@ -100,6 +106,7 @@ public class SummausPalvelu implements Runnable {
 					break;
 
 				case 3:
+
 					System.out.println(luvut.toString());
 					System.out.println("Sain " + tapaus + ", vastaan " + annaLkm());
 					oOut.writeInt(annaLkm());
@@ -107,10 +114,11 @@ public class SummausPalvelu implements Runnable {
 					break;
 
 				default:
+
+					yhteysValmis = false;
 					System.out.println("Sain " + tapaus + ", lopetetaan...");
 					oOut.writeInt(-1);
 					oOut.flush();
-					// yhteysValmis = false;
 					break;
 
 				}
@@ -213,14 +221,18 @@ public class SummausPalvelu implements Runnable {
 
 	public static int annaSum() { // kun Y lähettää X:lle (int) 1
 		int sum = 0;
-		for (int i = 0; i < luvut.size(); i++) {
-			sum = sum + luvut.get(i);
+		synchronized (luvut) {
+			for (Integer i : luvut) {
+				sum += i;
+			}
+			return sum;
 		}
-		return sum;
 	} // annaSum()
 
 	public static int annaSuurin() {
-		return luvut.indexOf(Collections.max(luvut));
+		synchronized (luvut) {
+			return luvut.indexOf(Collections.max(luvut)) + 1;
+		}
 	} // annaSuurin
 
 	public static int annaLkm() { // kun Y lähettää X:lle (int) 3
@@ -249,8 +261,6 @@ public class SummausPalvelu implements Runnable {
 
 		@Override
 		public void run() {
-			// Onnea tän metodin keksimiselle
-
 			try {
 				kuuntelevaSoketti = new ServerSocket(portti);
 				kuuntelevaSoketti.setSoTimeout(5000);
@@ -265,31 +275,29 @@ public class SummausPalvelu implements Runnable {
 				InputStream iS = soketti.getInputStream();
 				ObjectInputStream oIn = new ObjectInputStream(iS);
 
-				boolean eiNolla = true;
+				int lisattava = 0;
+				int tmp;
 				// Silmukka pyörii kunnes tulee vastaan 0
 
-				while (eiNolla) {
-					if (oIn.available() == 0)
-						soketti.setSoTimeout(5000);
-					else {
-						int lisattava = oIn.readInt();
-						System.out.println("Lisätään " + lisattava + " säikeeseen " + saieId);
-						int tmp = 0;
-						if (lisattava == 0)
-							eiNolla = false;
-						else {
-							tmp = luvut.get(saieId);
-							lisattava += tmp;
-							luvut.set(saieId, lisattava);
-							lisattyjenMaara++;
-						}
-					}
+				while (yhteysValmis) {
+					lisattava = oIn.readInt();
+					if (lisattava == 0)
+						break;
+					tmp = luvut.get(saieId);
+					lisattava += tmp;
+					luvut.set(saieId, lisattava);
+					lisattyjenMaara++;
 
-				}
+				} // while
 				soketti.close();
 			} catch (IOException e) {
-				e.printStackTrace();
-			}
+				try {
+					join(1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			} // catch
 
 		} // run
 
