@@ -1,6 +1,5 @@
 package hajo1;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -15,6 +14,20 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 
+/**
+ * 
+ * @author Miika Peltotalo ja Peetu Seilonen
+ * @version 4.12.2016 15:20
+ * 
+ * @var int[] porttiNumerot: sisältää porttien numeroit, joita SummausPalvelin
+ *      kuuntelee
+ * @var boolean yhteysValmis: kun yhteys asiakkaaseen on saatu ja on aika
+ *      ailoittaa SummausPalvelimen käyttö
+ * @var ArrayList<int> luvut: tänne kerätään kaikki vastaanotetut luvut
+ * @var ArrayList<Thread> summaajat: kaikki säikeet samassa nipussa
+ * @var int lisattyjenMaara: pitää yllä tietoa kuinka monta kertaa lukuja on
+ *      lisätty summaajiin
+ */
 public class SummausPalvelu implements Runnable {
 
 	private static int[] porttiNumerot;
@@ -131,6 +144,15 @@ public class SummausPalvelu implements Runnable {
 
 	}
 
+	/**
+	 * Luo summaajat taulukkoon porttinumeroiden mukaan, alustaa luvut taulukon
+	 * vastaamaan summaajien määrää ja käynnistää säikeet. Lopuksi lähettää
+	 * porttien tiedot palvelimelle.
+	 * 
+	 * @param soketti
+	 * @param oOut
+	 * @throws IOException
+	 */
 	public static void alustaJaLaheta(Socket soketti, ObjectOutputStream oOut) throws IOException {
 
 		// luodaaan säikeet ja lisätään ne listaan
@@ -145,6 +167,12 @@ public class SummausPalvelu implements Runnable {
 
 	}
 
+	/**
+	 * Muodostaan UDP-yhteyden ja lähettää porttinumeron sisältävän paketin
+	 * palvelimelle.
+	 * 
+	 * @throws IOException
+	 */
 	private static void lahetaUDP() throws IOException {
 		int porttiNo = 1337;
 		String portti = Integer.toString(porttiNo);
@@ -156,6 +184,12 @@ public class SummausPalvelu implements Runnable {
 		System.out.println("UDP lahetetty");
 	}
 
+	/**
+	 * Muodostaa TCP-yhteyden palvelimeen.
+	 * 
+	 * @return Soketti johon yhteys on muodostettu.
+	 * @throws IOException
+	 */
 	private static Socket muodostaTCP() throws IOException {
 		// Kuuntele 1-5 s, sen jälkeen lähetä uudelleen
 		// Viidennen uudelleen lähetyksen jälkeen terminate
@@ -182,11 +216,17 @@ public class SummausPalvelu implements Runnable {
 		return soketti;
 	} // void kuuntele()
 
+	/**
+	 * Saa parametreina aikaisemmin muodostetut oliovirrat ja soketin. Odottaa
+	 * t:n arvoa oliovirrasta, jonka mukaan SummausPalvelijaa aletaan
+	 * käyttämään.
+	 * 
+	 * @param soketti
+	 * @param oIn
+	 * @param oOut
+	 * @throws Exception
+	 */
 	private static void odotaT(Socket soketti, ObjectInputStream oIn, ObjectOutputStream oOut) throws Exception {
-		// Saa parametreina aikaisemmin muodostetut oliovirrat ja soketin
-		// Odottaa t:n arvoa oliovirrasta, jonka mukaan SummausPalvelijaa
-		// aletaan käyttämään
-
 		int t;
 		try {
 			t = oIn.readInt(); // yritetään lukea oliovirrasta kokonaislukua
@@ -212,6 +252,12 @@ public class SummausPalvelu implements Runnable {
 
 	} // odotaT()
 
+	/**
+	 * Metodi porttien lähettämiselle.
+	 * @param soketti
+	 * @param oOut
+	 * @throws IOException
+	 */
 	public static void lahetaPortit(Socket soketti, ObjectOutputStream oOut) throws IOException {
 		for (int i = 0; i < porttiNumerot.length; i++) {
 			oOut.writeInt(porttiNumerot[i]);
@@ -219,6 +265,10 @@ public class SummausPalvelu implements Runnable {
 		}
 	}
 
+	/**
+	 * Summaa luvut-taulukon luvut yhteen.
+	 * @return
+	 */
 	public static int annaSum() { // kun Y lähettää X:lle (int) 1
 		int sum = 0;
 		synchronized (luvut) {
@@ -229,6 +279,10 @@ public class SummausPalvelu implements Runnable {
 		}
 	} // annaSum()
 
+	/**
+	 * Palauttaa taulukon suurimman luvun.
+	 * @return 
+	 */
 	public static int annaSuurin() {
 		synchronized (luvut) {
 			return luvut.indexOf(Collections.max(luvut)) + 1;
@@ -239,16 +293,17 @@ public class SummausPalvelu implements Runnable {
 		return lisattyjenMaara;
 	} // annaLkm()
 
+	/**
+	 * Jokainen SummausPalvelija muodostaa TCP-yhteyden WorkDistributoriin.
+	 * Sen jälkeen lukee oliovirran yli kokonaislukuja ja lopulta
+	 * vastaanottaa nollan ja sulkee itsensä.
+	 * 
+	 * @var int portti: Portti, jota SummausPalvelija kuuntelee
+	 * @var int saieId: Numero säikeelle josta sen voi tunnistaa
+	 * @var omaSum: yksittäisen SummausPalvelijan vastaanottama summa
+	 */
 	static class SummausPalvelija extends Thread {
-		/**
-		 * Jokainen SummausPalvelija muodostaa TCP-yhteyden WorkDistributoriin.
-		 * Sen jälkeen lukee oliovirran yli kokonaislukuja ja lopulta
-		 * vastaanottaa nollan ja sulkee itsensä.
-		 * 
-		 * @var int portti: Portti, jota SummausPalvelija kuuntelee
-		 * @var int saieId: Numero säikeelle josta sen voi tunnistaa
-		 * @var omaSum: yksittäisen SummausPalvelijan vastaanottama summa
-		 */
+		
 		private final int portti;
 		private final int saieId;
 		private int omaSum = 0;
